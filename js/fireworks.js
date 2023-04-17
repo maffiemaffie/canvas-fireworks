@@ -17,6 +17,10 @@ export class Fireworks {
             this.#update(deltaTime);
             this.#draw();
         });
+
+        clock.addInterval(() => {
+            this.#fireworks.push(this.#createNewFirework());
+        }, 1000);
     }
 
     #update(deltaTime) {
@@ -31,15 +35,21 @@ export class Fireworks {
         this.#ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         this.#ctx.restore();
 
+        this.#ctx.save();
+        this.#ctx.translate(0, this.canvas.height);
+        this.#ctx.scale(1, -1);
+
         for (let firework of this.#fireworks) {
             firework.draw(this.#ctx);
         }
+
+        this.#ctx.restore();
     }
 
     #createNewFirework() {
         const x = Math.random() * this.canvas.width;
         const color = 'red';
-        const speed = Math.random() * 2 + 1;
+        const speed = 0.5 * (Math.random() * 1 + 1);
         const burstAt = 0.5 * (Math.random() * this.canvas.height + this.canvas.height);
 
         return new Firework(x, color, speed, burstAt);
@@ -59,6 +69,7 @@ class Firework {
     constructor(x, color, speed, burstAt, burstCount = 30) {
         this.#x = x;
         this.#y = 0;
+        this.#color = color;
         this.#speed = speed;
         this.#burstAt = burstAt;
         this.#burstCount = burstCount
@@ -76,6 +87,9 @@ class Firework {
         ctx.save();
         ctx.translate(this.#x, this.#y);
 
+        ctx.strokeStyle = this.#color;
+        ctx.lineWidth = 5;
+
         if (this.#y < this.#burstAt) this.#drawRising(ctx);
         else this.#drawBurst(ctx);
 
@@ -83,18 +97,30 @@ class Firework {
     }
 
     #drawRising(ctx) {
-        ctx.strokeStyle = this.#color;
-        ctx.lineWidth = 5;
-
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.lineTo(0, this.#speed);
+        ctx.lineTo(0, - this.#speed * 50);
         ctx.closePath();
-
         ctx.stroke();
     }
 
     #drawBurst(ctx) {
+        const SPOKES = 7;
+        for (let offset = 0, dOffset = 30; offset < 3 * dOffset; offset += dOffset) {
+            for (let angle = 0, dAngle = Math.PI * 2 / SPOKES; angle < Math.PI * 2; angle += dAngle) {
+                ctx.save();
 
+                ctx.rotate(angle);
+                ctx.translate(0, this.#speed * (this.#time - this.#burstAt - offset));
+
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, 10);
+                ctx.closePath();
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
     }
 }
